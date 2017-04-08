@@ -120,27 +120,29 @@ unsigned int addMessage(message* &messageArray, int &messageArraySize, int &arra
 	
 	//getline(in, messageArray[arrayIndex].from); //Read in "from" field
 	in >> messageArray[arrayIndex].from;
-	std::cout << "From field loaded: " << std::endl;
+	std::cout << "From: " << messageArray[arrayIndex].from << std::endl;
 	
 	in >> temp; //Read in "Date"
+	in.ignore(1);
 	getline(in, messageArray[arrayIndex].date);
-	std::cout << "Date field loaded: " << std::endl;
+	std::cout << "Date: " << messageArray[arrayIndex].date << std::endl;
 
 	in >> temp; //Read in "To"
+	in.ignore(1);
 	getline(in, messageArray[arrayIndex].to);
-	std::cout << "To field loaded: " << std::endl;
-	
+	std::cout << "To: " << messageArray[arrayIndex].to << std::endl;
+
 	in >> temp; //Read in "Subject"
+	in.ignore(1);
 	getline(in, messageArray[arrayIndex].subject);
-	std::cout << "Subject field loaded: " << std::endl;
+	std::cout << "Subject: " << messageArray[arrayIndex].subject << std::endl;
 
 	getline(in, temp); //Read in "Message"
 	getline(in, messageArray[arrayIndex].message);		
-	std::cout << "Message field loaded: " << std::endl;
 		
 	in >> temp; //Read in "id xxxxx"
 	in >> messageArray[arrayIndex].id; //Read in id number
-	std::cout << "ID field loaded: " << std::endl;
+	std::cout << "id: " << messageArray[arrayIndex].id << std::endl;
 		
 	std::string rawString = messageArray[arrayIndex].from +  //Add fields together to form string to hash
 							messageArray[arrayIndex].date + 
@@ -149,11 +151,10 @@ unsigned int addMessage(message* &messageArray, int &messageArraySize, int &arra
 							messageArray[arrayIndex].message;						 
 	std::string hashedString = sha256(rawString); //Hash string using sha256
 	unsigned int signature = sign(hashedString, messageArray[arrayIndex].from); //Calculate signature for message.
-	//std::cout << "Calculated Signature: " << signature << std::endl << std::endl; //Display message signature
 	
 	arrayIndex++; //Increment index in array
 	
-	std::cout << "Array index now = " << arrayIndex << std::endl;
+	std::cout << "Signature: " << signature << std::endl;
 	return signature; //Return message signature
 }
 
