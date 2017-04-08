@@ -126,7 +126,7 @@ std::string sha256(std::string input)
  
     char buf[2*SHA256::DIGEST_SIZE+1];
     buf[2*SHA256::DIGEST_SIZE] = 0;
-    for (int i = 0; i < SHA256::DIGEST_SIZE; i++)
+    for (unsigned int i = 0; i < SHA256::DIGEST_SIZE; i++)
         sprintf(buf+i*2, "%02x", digest[i]);
     return std::string(buf);
 }
@@ -135,7 +135,7 @@ unsigned int sign( std::string message, std::string key )
 {
 	unsigned int signedMessage = 0;
 
-	for ( int i=0, j=0; i<message.length(); i++, j=(j+1)%key.length() )
+	for ( size_t i=0, j=0; i<message.length(); i++, j=(j+1)%key.length() )
 	{
 		unsigned int letter = message[i];
 		unsigned int x_or = key[j];
