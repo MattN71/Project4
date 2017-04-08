@@ -17,8 +17,8 @@ struct message {
 //Function Prototypes
 void mailbox(std::string input, std::string output);
 void grow(message* &myArray, int &size);
-unsigned int loadMessage(message* messageArray, int &messageArraySize, int &arrayIndex, std::string fileName);
-unsigned int addMessage(message* messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp);
+unsigned int loadMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::string fileName);
+unsigned int addMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp);
 void displayInbox(std::ofstream &out, message* &messageArray, int arrayIndex, bool entireInbox, int whichOne = -1);
 
 

@@ -30,7 +30,7 @@ void mailbox(std::string input, std::string output) {
 		} else if (temp == "add") {
 			command >> temp; //Store "From" into temp
 			out << "Command: add " << std::endl;
-			unsigned int result = addMessage(goodMsgPtr, goodSize, goodIndex, command, temp); //Add message to good Inbox
+			unsigned int result = addMessage(goodMsgPtr, goodSize, goodIndex, command, temp); //Add message to good Inbox		
 			if (goodMsgPtr[goodIndex].id != result) { //If message is hacked
 				//Move message to bad inbox
 			}
@@ -39,16 +39,14 @@ void mailbox(std::string input, std::string output) {
 			getline(command, temp);
 			std::istringstream lineS(temp);
 			std::string inbox;
-			int num;
+			int num = 0;
 			lineS >> inbox;
 			lineS >> num;	
 			out << "Command: show " << inbox;
 			
 			if (lineS.fail()) {
-				std::cout << "Inbox: " << inbox << ", Num: N/A." << std::endl;
 				out << std::endl;
 			} else {
-				std::cout << "Inbox: " << inbox << ", Num: " << num << std::endl;
 				out << " " << num << std::endl;
 			}
 			
@@ -74,8 +72,7 @@ void mailbox(std::string input, std::string output) {
 
 //Function to double size of array and reallocate memory for array of message struct
 void grow(message* &myArray, int &size) {
-	std::cout << "Resizing array from " << size << " to " << size*2 << std::endl;
-	
+	//std::cout << "Resizing array from " << size << " to " << size*2 << std::endl;
 	message *temp = myArray; //make a temporary pointer to the old array 
 	myArray = new message[size*2]; //make a new larger array 	
 	for (int i = 0; i < (size); i++) { //copy the element from the old full array into the new larger array 
@@ -84,20 +81,20 @@ void grow(message* &myArray, int &size) {
 	delete [] temp; //release the old memory
 	temp = nullptr; //null it out 
 	size *= 2; //double the size 
+	//std::cout << "Resizing successful" << std::endl;
 }
 
 
 //This function will load the messages from the given file into the given array. 
 //If needed, it will call grow to increase the size of the array
-unsigned int loadMessage(message* messageArray, int &messageArraySize, int &arrayIndex, std::string fileName) {
+unsigned int loadMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::string fileName) {
 	std::ifstream in(fileName); //Open new file stream
 	std::string temp; //Temporary variable for extraction
 	unsigned int count = 0;
-	in >> temp; //Prime
+	in >> temp; //Prime - "From" 
 	while ( !in.fail() ) { //Test	
 		addMessage(messageArray, messageArraySize, arrayIndex, in, temp); //Add message, ignore signature for this function
-		arrayIndex++; //Increment index in array
-		in >> temp; ///Re-prime
+		in >> temp; ///Re-prime - "From"
 		count++;
 	}
 	in.close(); //Close file stream
@@ -107,29 +104,37 @@ unsigned int loadMessage(message* messageArray, int &messageArraySize, int &arra
 
 //This function adds one message from the given input file stream to the array passed to the function. It also increments the array index
 //and increases the size of the array if necessary. 
-unsigned int addMessage(message* messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp) {
+unsigned int addMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp) {
 
 	if (arrayIndex == messageArraySize) { //If array is now full, increase size
+		//std::cout << "Doubling array in addMessage function" << std::endl;
 		grow(messageArray, messageArraySize); //Double size of array
 	}
 	
-	getline(in, messageArray[arrayIndex].from); //Read in "from" field
+	//getline(in, messageArray[arrayIndex].from); //Read in "from" field
+	in >> messageArray[arrayIndex].from;
+	std::cout << "From field loaded: " << std::endl;
 	
 	in >> temp; //Read in "Date"
 	getline(in, messageArray[arrayIndex].date);
-	
+	std::cout << "Date field loaded: " << std::endl;
+
 	in >> temp; //Read in "To"
 	getline(in, messageArray[arrayIndex].to);
+	std::cout << "To field loaded: " << std::endl;
 	
 	in >> temp; //Read in "Subject"
 	getline(in, messageArray[arrayIndex].subject);
-	
+	std::cout << "Subject field loaded: " << std::endl;
+
 	getline(in, temp); //Read in "Message"
 	getline(in, messageArray[arrayIndex].message);		
+	std::cout << "Message field loaded: " << std::endl;
 		
 	in >> temp; //Read in "id xxxxx"
 	in >> messageArray[arrayIndex].id; //Read in id number
-	
+	std::cout << "ID field loaded: " << std::endl;
+		
 	std::string rawString = messageArray[arrayIndex].from +  //Add fields together to form string to hash
 							messageArray[arrayIndex].date + 
 							messageArray[arrayIndex].to + 
@@ -138,12 +143,17 @@ unsigned int addMessage(message* messageArray, int &messageArraySize, int &array
 	std::string hashedString = sha256(rawString); //Hash string using sha256
 	unsigned int signature = sign(hashedString, messageArray[arrayIndex].from); //Calculate signature for message.
 	//std::cout << "Calculated Signature: " << signature << std::endl << std::endl; //Display message signature
+	
+	arrayIndex++; //Increment index in array
+	
+	std::cout << "Array index now = " << arrayIndex << std::endl;
 	return signature; //Return message signature
 }
 
 void displayInbox(std::ofstream &out, message* &messageArray, int arrayIndex, bool entireInbox, int whichOne) {
 	if (entireInbox == true) { //If printing entire inbox
 		for (int i = 0; i < arrayIndex; i++) {
+			out << std::endl << i << std::endl;
 			out << "From: " << messageArray[i].from << std::endl;
 			out << "Date: " << messageArray[i].date << std::endl;
 			out << "To: " << messageArray[i].to << std::endl;
@@ -160,8 +170,20 @@ void displayInbox(std::ofstream &out, message* &messageArray, int arrayIndex, bo
 			out << "Message: " << messageArray[whichOne].message << std::endl;
 			out << "ID: " << messageArray[whichOne].id << std::endl;
 		} else {
-			out << "\tInvalid Message Number" << std::endl;
+			out << "\tInvalid Message Number." << std::endl;
 		}
 	}
 }
 
+
+void removeMessage(std::ofstream &out, message* &messageArray, int &arrayIndex, int messageToRemove) {
+	if (messageToRemove >= arrayIndex) {
+		out << "\tInvalid message number." << std::endl;
+		return;
+	}
+
+	arrayIndex -= 1;
+	for (int i = messageToRemove; i < (arrayIndex - 1); i++) { //Shift all messages down
+		messageArray[i] = messageArray[i+1];
+	}
+}
