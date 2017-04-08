@@ -9,4 +9,6 @@ Hey don't put off project 4 any more.  You'll thank me when you are done.
 ID 3630 
 
 show inbox 4
+show inbox
 save inbox test.txt
+remove inbox -4

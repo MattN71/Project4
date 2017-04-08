@@ -30,11 +30,12 @@ void mailbox(std::string input, std::string output) {
 		} else if (temp == "add") {
 			command >> temp; //Store "From" into temp
 			out << "Command: add " << std::endl;
-			unsigned int result = addMessage(goodMsgPtr, goodSize, goodIndex, command, temp); //Add message to good Inbox		
-			if (goodMsgPtr[goodIndex].id != result) { //If message is hacked
-				//Move message to bad inbox
-			}
-			out << "\tMessage added" << std::endl;
+			addMessage(goodMsgPtr, goodSize, goodIndex, command, temp); //Add message to good Inbox		
+			bool isHacked = checkIfHacked(goodMsgPtr, goodIndex, hackedMsgPtr, hackedIndex, (goodIndex - 1), out);
+			if (isHacked)
+				out << "\tMessage was not authentic.  Sent to hacked list." << std::endl;
+			else
+				out << "\tMessage added" << std::endl;
 		} else if (temp == "show") {
 			getline(command, temp);
 			std::istringstream lineS(temp);
@@ -54,7 +55,15 @@ void mailbox(std::string input, std::string output) {
 				displayInbox(out, hackedMsgPtr, hackedIndex, lineS.fail(), num);
 			}
 		} else if (temp == "remove") {
-			
+			std::string mailbox;
+			int num = 0;
+			command >> mailbox;
+			command >> num;
+			out << "Command: remove " << mailbox << " " << num << std::endl;
+			if (mailbox == "inbox")
+				removeMessage(out, goodMsgPtr, goodIndex, num);
+			else
+				removeMessage(out, hackedMsgPtr, hackedIndex, num);
 		} else if (temp == "save") {
 			std::string whichOne;
 			std::string outFileName;
@@ -111,7 +120,7 @@ unsigned int loadMessage(message* &messageArray, int &messageArraySize, int &arr
 
 //This function adds one message from the given input file stream to the array passed to the function. It also increments the array index
 //and increases the size of the array if necessary. 
-unsigned int addMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp) {
+void addMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp) {
 
 	if (arrayIndex == messageArraySize) { //If array is now full, increase size
 		//std::cout << "Doubling array in addMessage function" << std::endl;
@@ -120,44 +129,35 @@ unsigned int addMessage(message* &messageArray, int &messageArraySize, int &arra
 	
 	//getline(in, messageArray[arrayIndex].from); //Read in "from" field
 	in >> messageArray[arrayIndex].from;
-	std::cout << "From: " << messageArray[arrayIndex].from << std::endl;
+//	std::cout << "From: " << messageArray[arrayIndex].from << std::endl;
 	
 	in >> temp; //Read in "Date"
 	in.ignore(1);
 	getline(in, messageArray[arrayIndex].date);
-	std::cout << "Date: " << messageArray[arrayIndex].date << std::endl;
+//	std::cout << "Date: " << messageArray[arrayIndex].date << std::endl;
 
 	in >> temp; //Read in "To"
 	in.ignore(1);
 	getline(in, messageArray[arrayIndex].to);
-	std::cout << "To: " << messageArray[arrayIndex].to << std::endl;
+//	std::cout << "To: " << messageArray[arrayIndex].to << std::endl;
 
 	in >> temp; //Read in "Subject"
 	in.ignore(1);
 	getline(in, messageArray[arrayIndex].subject);
-	std::cout << "Subject: " << messageArray[arrayIndex].subject << std::endl;
+//	std::cout << "Subject: " << messageArray[arrayIndex].subject << std::endl;
 
 	getline(in, temp); //Read in "Message"
 	getline(in, messageArray[arrayIndex].message);		
 		
 	in >> temp; //Read in "id xxxxx"
 	in >> messageArray[arrayIndex].id; //Read in id number
-	std::cout << "id: " << messageArray[arrayIndex].id << std::endl;
-		
-	std::string rawString = messageArray[arrayIndex].from +  //Add fields together to form string to hash
-							messageArray[arrayIndex].date + 
-							messageArray[arrayIndex].to + 
-							messageArray[arrayIndex].subject + 
-							messageArray[arrayIndex].message;						 
-	std::string hashedString = sha256(rawString); //Hash string using sha256
-	unsigned int signature = sign(hashedString, messageArray[arrayIndex].from); //Calculate signature for message.
+//	std::cout << "id: " << messageArray[arrayIndex].id << std::endl;
 	
 	arrayIndex++; //Increment index in array
 	
-	std::cout << "Signature: " << signature << std::endl;
-	return signature; //Return message signature
 }
 
+//This function will either display a single message, or the entire mailbox, depending on the input. 
 void displayInbox(std::ofstream &out, message* &messageArray, int arrayIndex, bool entireInbox, int whichOne) {
 	if (entireInbox == true) { //If printing entire inbox
 		for (int i = 0; i < arrayIndex; i++) {
@@ -182,20 +182,22 @@ void displayInbox(std::ofstream &out, message* &messageArray, int arrayIndex, bo
 	}
 }
 
-
+//This function will check if a message number is valid, and then remove it from the mailbox if so. 
+//Then it will shift down the messages above the one removed.
 void removeMessage(std::ofstream &out, message* &messageArray, int &arrayIndex, int messageToRemove) {
-	if (messageToRemove >= arrayIndex) {
-		out << "\tInvalid message number." << std::endl;
+	if (messageToRemove > arrayIndex || messageToRemove < 0) {
+		out << "\tMessage not removed" << std::endl;
+		out << "\tMessage " << messageToRemove << " not a valid message number" << std::endl;
 		return;
 	}
 
-	arrayIndex -= 1;
-	for (int i = messageToRemove; i < (arrayIndex - 1); i++) { //Shift all messages down
+	for (int i = messageToRemove; i < (arrayIndex); i++) { //Shift all messages down
 		messageArray[i] = messageArray[i+1];
 	}
+	arrayIndex -= 1; //Reduce array index by 1
 }
 
-
+//This function will take a mailbox array and output it to a mbox file, which could then be loaded using the loadMessage function.
 void saveInbox(std::ofstream &out, message* &messageArray, int arrayIndex) {
 	for (int i = 0; i < arrayIndex; i++) {
 		out << "From " << messageArray[i].from << std::endl;
@@ -204,5 +206,32 @@ void saveInbox(std::ofstream &out, message* &messageArray, int arrayIndex) {
 		out << "Subject " << messageArray[i].subject << std::endl;
 		out << "Message " << std::endl << messageArray[i].message << std::endl;
 		out << "id " << messageArray[i].id << std::endl;
+	}
+}
+
+//This function will check to see if a message is hacked, and if so, will move it from the inbox to the hacked inbox.
+bool checkIfHacked(message* &goodArray, int &goodIndex, message* &hackedArray, int &hackedIndex, int messageNum, std::ofstream &out) {
+	std::string rawString = goodArray[messageNum].from +  //Add fields together to form string to hash
+							goodArray[messageNum].date + 
+							goodArray[messageNum].to + 
+							goodArray[messageNum].subject + 
+							goodArray[messageNum].message;				
+	std::string hashedString = sha256(rawString); //Hash string using sha256
+	unsigned int signature = sign(hashedString, (goodArray[messageNum].from)); //Calculate signature for message.
+	
+	if (signature == goodArray[messageNum].id) { //If message is genuine
+	
+		return false;
+	} else { //If message is hacked
+		hackedIndex++; //Increment hacked size by 1 
+		hackedArray[hackedIndex].from = goodArray[messageNum].from; //Copy message from inbox to hacked inbox
+		hackedArray[hackedIndex].date = goodArray[messageNum].date;
+		hackedArray[hackedIndex].to = goodArray[messageNum].to;
+		hackedArray[hackedIndex].subject = goodArray[messageNum].subject;
+		hackedArray[hackedIndex].message = goodArray[messageNum].message;
+		hackedArray[hackedIndex].id = goodArray[messageNum].id;
+		
+		removeMessage(out, goodArray, goodIndex, messageNum); //Remove message from inbox
+		return true;
 	}
 }

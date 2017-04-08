@@ -11,17 +11,16 @@ struct message {
 	std::string subject;
 	std::string message;
 	unsigned int id;
-	bool isGenuine;
 };
 
 //Function Prototypes
 void mailbox(std::string input, std::string output);
 void grow(message* &myArray, int &size);
 unsigned int loadMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::string fileName);
-unsigned int addMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp);
+void addMessage(message* &messageArray, int &messageArraySize, int &arrayIndex, std::ifstream &in, std::string &temp);
 void displayInbox(std::ofstream &out, message* &messageArray, int arrayIndex, bool entireInbox, int whichOne = -1);
 void saveInbox(std::ofstream &out, message* &messageArray, int arrayIndex);
-
-
+void removeMessage(std::ofstream &out, message* &messageArray, int &arrayIndex, int messageToRemove);
+bool checkIfHacked(message* &goodArray, int &goodIndex, message* &hackedArray, int &hackedIndex, int messageNum, std::ofstream &out);
 
 #endif /* MAILBOX_H */
