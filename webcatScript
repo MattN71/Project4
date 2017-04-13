@@ -1,0 +1,4 @@
+#!/usr/local/bin/bash
+awk 'NR % 2 == 0' $1 > tempScript.txt
+sed 's/^ *//' tempScript.txt > $2
+rm tempScript.txt  
