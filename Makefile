@@ -3,7 +3,7 @@
 # Name for project
 program_NAME := project4
 # Files needed for webcat
-webcat_files := mailbox.cpp mailbox.h
+webcat_files := mailbox.cpp mailbox.h sha256.cpp
 
 
 program_CXX_SRCS := $(wildcard *.cpp)
@@ -14,7 +14,7 @@ CXXFLAGS += -g -O0 -Wall -Wextra
 
 .PHONY: all clean webcat debug
 
-all: debug
+all: $(program_NAME)
 
 $(program_NAME): $(program_CXX_OBJS)
 	$(CXX) $(CXXFLAGS) $(program_CXX_OBJS) -o $(program_NAME)
